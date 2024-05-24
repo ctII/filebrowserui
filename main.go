@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
+	"cmp"
+	"flag"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -17,36 +15,30 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type filebrowserSession struct {
-	Host       string
-	authCookie string
+var (
+	userFlag = flag.String("user", "test", "username to use")
+	passFlag = flag.String("pass", "test", "password to use")
+	hostFlag = flag.String("host", "", "full url to the filebrowser instance")
+)
+
+// handleError on window with err and call f after user hits "Okay" button.
+func handleError(w fyne.Window, err error, f func()) {
+	once := sync.Once{}
+
+	w.SetContent(
+		container.NewVBox(
+			widget.NewLabel(err.Error()),
+			widget.NewButton("Copy Error", func() {
+				w.Clipboard().SetContent(err.Error())
+			}),
+			widget.NewButton("Okay", func() {
+				once.Do(f)
+			}),
+		),
+	)
 }
 
-func (sess *filebrowserSession) Login(user, pass string) (err error) {
-	jsonData, err := json.Marshal(struct{ Username, Password string }{Username: user, Password: pass})
-
-	resp, err := http.NewRequest("GET", sess.Host+"/api/login", bytes.NewReader(jsonData))
-	if err != nil {
-		return fmt.Errorf("could not GET login token from %v/api/login: %w", sess.Host, err)
-	}
-	defer func() {
-		err2 := resp.Body.Close()
-		if err2 != nil {
-			err = errors.Join(err, fmt.Errorf("could not close body of request: %w", err))
-		}
-	}()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1e6))
-	if err != nil {
-		return fmt.Errorf("could not read body from login request: %w", err)
-	}
-
-	sess.authCookie = string(body)
-
-	return nil
-}
-
-func handleLogin(w fyne.Window) (user, pass string, sess *filebrowserSession, err error) {
+func login(w fyne.Window) (sess *filebrowserSession, err error) {
 	done := make(chan struct{}, 1)
 
 	hEntry := widget.NewEntry()
@@ -68,9 +60,6 @@ func handleLogin(w fyne.Window) (user, pass string, sess *filebrowserSession, er
 			},
 		},
 		OnSubmit: func() {
-			user = uEntry.Text
-			pass = pEntry.Text
-
 			select {
 			case done <- struct{}{}:
 			default:
@@ -82,23 +71,72 @@ func handleLogin(w fyne.Window) (user, pass string, sess *filebrowserSession, er
 	w.SetContent(container.NewGridWithColumns(3, layout.NewSpacer(), vbox, layout.NewSpacer()))
 
 	<-done
-	return user, pass, nil, nil
-}
 
-func logic(w fyne.Window) (err error) {
-	user, pass, _, err := handleLogin(w)
+	w.SetContent(container.NewCenter(widget.NewLabel("Logging in")))
+
+	sess, err = loginToFilebrowser(
+		cmp.Or(hEntry.Text, *hostFlag),
+		cmp.Or(uEntry.Text, *userFlag),
+		cmp.Or(pEntry.Text, *passFlag),
+	)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("could not loginToFilebrowser: %w", err)
 	}
 
-	w.SetContent(widget.NewLabel(fmt.Sprintf("user: %v pass: %v", user, pass)))
-	return nil
+	return sess, nil
+}
+
+func browse(w fyne.Window, sess *filebrowserSession) {
+	tree := widget.NewTree(
+		func(id widget.TreeNodeID) []widget.TreeNodeID {
+			switch id {
+			case "":
+				return []widget.TreeNodeID{"a", "b", "c"}
+			case "a":
+				return []widget.TreeNodeID{"a1", "a2"}
+			}
+			return []string{}
+		},
+		func(id widget.TreeNodeID) bool {
+			return id == "" || id == "a"
+		},
+		func(branch bool) fyne.CanvasObject {
+			if branch {
+				return widget.NewLabel("Branch template")
+			}
+			return widget.NewLabel("Leaf template")
+		},
+		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {
+			text := id
+			if branch {
+				text += " (branch)"
+			}
+			o.(*widget.Label).SetText(text)
+		},
+	)
+	w.SetContent(tree)
+}
+
+func upload(w fyne.Window, sess *filebrowserSession) {
+
+}
+
+func logic(w fyne.Window) {
+	sess, err := login(w)
+	if err != nil {
+		handleError(w, err, func() { go logic(w) })
+		return
+	}
+
+	browse(w, sess)
 }
 
 func run() (err error) {
+	flag.Parse()
+
 	a := app.New()
 	w := a.NewWindow("FilebrowserUI")
-	w.Resize(fyne.NewSize(640, 360))
+	w.Resize(fyne.NewSize(700, 400))
 
 	go logic(w)
 
