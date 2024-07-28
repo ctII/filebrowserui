@@ -113,6 +113,10 @@ func loginToFilebrowser(host, user, pass string) (sess *filebrowserSession, err 
 		}
 	}()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("non-200 http status code logging in: %v", resp.Status)
+	}
+
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1e6))
 	if err != nil {
 		return nil, fmt.Errorf("could not read body from login request: %w", err)

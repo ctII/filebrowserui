@@ -1,11 +1,13 @@
 package main
 
 import (
-	"cmp"
-	"flag"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
+	"log/slog"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -15,14 +17,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var (
-	userFlag = flag.String("user", "test", "username to use")
-	passFlag = flag.String("pass", "test", "password to use")
-	hostFlag = flag.String("host", "", "full url to the filebrowser instance")
-)
-
 // handleError on window with err and call f after user hits "Okay" button.
-func handleError(w fyne.Window, err error, f func()) {
+func handleError(w fyne.Window, err error, okay func()) {
 	once := sync.Once{}
 
 	w.SetContent(
@@ -32,18 +28,22 @@ func handleError(w fyne.Window, err error, f func()) {
 				w.Clipboard().SetContent(err.Error())
 			}),
 			widget.NewButton("Okay", func() {
-				once.Do(f)
+				once.Do(okay)
 			}),
 		),
 	)
 }
 
 func login(w fyne.Window) (sess *filebrowserSession, err error) {
-	done := make(chan struct{}, 1)
+	done := make(chan struct{})
 
 	hEntry := widget.NewEntry()
+	hEntry.Text = config.Host
 	uEntry := widget.NewEntry()
-	pEntry := widget.NewEntry()
+	uEntry.Text = config.User
+	pEntry := widget.NewPasswordEntry()
+	pEntry.Text = config.Pass
+
 	form := &widget.Form{
 		Items: []*widget.FormItem{
 			{
@@ -59,12 +59,7 @@ func login(w fyne.Window) (sess *filebrowserSession, err error) {
 				Widget: pEntry,
 			},
 		},
-		OnSubmit: func() {
-			select {
-			case done <- struct{}{}:
-			default:
-			}
-		},
+		OnSubmit: sync.OnceFunc(func() { close(done) }),
 	}
 
 	vbox := (container.NewVBox(layout.NewSpacer(), form, layout.NewSpacer()))
@@ -74,13 +69,16 @@ func login(w fyne.Window) (sess *filebrowserSession, err error) {
 
 	w.SetContent(container.NewCenter(widget.NewLabel("Logging in")))
 
-	sess, err = loginToFilebrowser(
-		cmp.Or(hEntry.Text, *hostFlag),
-		cmp.Or(uEntry.Text, *userFlag),
-		cmp.Or(pEntry.Text, *passFlag),
-	)
+	if hEntry.Text != config.Host || uEntry.Text != config.User || pEntry.Text != config.Pass {
+		config.Host = hEntry.Text
+		config.User = uEntry.Text
+		config.Pass = pEntry.Text
+		config.changed = true
+	}
+
+	sess, err = loginToFilebrowser(config.Host, config.User, config.Pass)
 	if err != nil {
-		return nil, fmt.Errorf("could not loginToFilebrowser: %w", err)
+		return nil, fmt.Errorf("could not login to (%v): %w", config.Host, err)
 	}
 
 	return sess, nil
@@ -122,18 +120,81 @@ func upload(w fyne.Window, sess *filebrowserSession) {
 }
 
 func logic(w fyne.Window) {
-	sess, err := login(w)
-	if err != nil {
-		handleError(w, err, func() { go logic(w) })
-		return
+	if config == nil { // TODO: use config.loaded?
+		err := parseConfig()
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
+
+				// set loaded to true as if the file doesn't exist, we "successfully"
+				// loaded the defaults. this lets things like the save config logic work
+				config = &Config{loaded: true}
+
+				go logic(w)
+
+				return
+			}
+
+			handleError(w, fmt.Errorf("WARNING configuration file error: %w", err), func() {
+				go logic(w)
+			})
+			return
+		}
+	}
+
+	// TODO: this flow should be async, not required to sync back to this function every run
+	// lock user into login loop until they login successfully.
+	var (
+		sess *filebrowserSession
+		err  error
+	)
+	for {
+		sess, err = login(w)
+		if err != nil {
+			acked := make(chan struct{})
+			handleError(w, err, func() { close(acked) })
+			<-acked
+			continue
+		}
+		break
+	}
+
+	if config.changed {
+		if config.loaded {
+			if err := saveConfig(); err != nil {
+				acked := make(chan struct{})
+				handleError(w, fmt.Errorf("could not save config file: %w", err), func() { acked <- struct{}{} })
+				<-acked
+			}
+		} else {
+			continueNoSave := make(chan struct{})
+			overwrite := make(chan struct{})
+
+			w.SetContent(
+				container.NewVBox(
+					widget.NewLabel("Would you like to save over the current configuration file, even though it failed to load?\n\n"+
+						"config file path: "+filepath.Join(config.Dir, configFileName)),
+					widget.NewButton("Continue without saving", sync.OnceFunc(func() { close(continueNoSave) })),
+					widget.NewButton("Overwrite config file", sync.OnceFunc(func() { close(overwrite) })),
+				),
+			)
+
+			select {
+			case <-overwrite:
+				if err := saveConfig(); err != nil {
+					acked := make(chan struct{})
+					handleError(w, fmt.Errorf("could not save config file: %w", err), func() { acked <- struct{}{} })
+					<-acked
+				}
+			case <-continueNoSave:
+			}
+		}
 	}
 
 	browse(w, sess)
 }
 
 func run() (err error) {
-	flag.Parse()
-
 	a := app.New()
 	w := a.NewWindow("FilebrowserUI")
 	w.Resize(fyne.NewSize(700, 400))
