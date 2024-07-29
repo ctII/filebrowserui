@@ -1,12 +1,15 @@
 package main
 
 import (
-	"os"
 	"testing"
 )
 
 func TestLogin(t *testing.T) {
-	sess, err := loginToFilebrowser(os.Getenv("FILEBROWSER_HOST"), os.Getenv("FILEBROWSER_USERNAME"), os.Getenv("FILEBROWSER_PASSWORD"))
+	if err := parseConfig(); err != nil {
+		t.Fatal(err)
+	}
+
+	sess, err := loginToFilebrowser(config.Host, config.User, config.Pass)
 	if err != nil {
 		t.Fatal(err)
 	}

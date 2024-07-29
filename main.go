@@ -84,41 +84,6 @@ func login(w fyne.Window) (sess *filebrowserSession, err error) {
 	return sess, nil
 }
 
-func browse(w fyne.Window, sess *filebrowserSession) {
-	tree := widget.NewTree(
-		func(id widget.TreeNodeID) []widget.TreeNodeID {
-			switch id {
-			case "":
-				return []widget.TreeNodeID{"a", "b", "c"}
-			case "a":
-				return []widget.TreeNodeID{"a1", "a2"}
-			}
-			return []string{}
-		},
-		func(id widget.TreeNodeID) bool {
-			return id == "" || id == "a"
-		},
-		func(branch bool) fyne.CanvasObject {
-			if branch {
-				return widget.NewLabel("Branch template")
-			}
-			return widget.NewLabel("Leaf template")
-		},
-		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {
-			text := id
-			if branch {
-				text += " (branch)"
-			}
-			o.(*widget.Label).SetText(text)
-		},
-	)
-	w.SetContent(tree)
-}
-
-func upload(w fyne.Window, sess *filebrowserSession) {
-
-}
-
 func logic(w fyne.Window) {
 	if config == nil { // TODO: use config.loaded?
 		err := parseConfig()
@@ -195,6 +160,25 @@ func logic(w fyne.Window) {
 }
 
 func run() (err error) {
+	switch os.Getenv("LOG_LEVEL") {
+	case "debug":
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		slog.Info("Set loglevel", "level", "DEBUG")
+	case "info":
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+		slog.Info("Set log level", "level", "INFO")
+	case "warn":
+		slog.SetLogLoggerLevel(slog.LevelWarn)
+		slog.Info("Set log level", "level", "WARN")
+	case "error":
+		slog.SetLogLoggerLevel(slog.LevelError)
+		slog.Info("Set log level", "level", "ERROR")
+	case "":
+		slog.Info("Using default log level")
+	default:
+		slog.Error("unknown log level", "level", os.Getenv("LOG_LEVEL"))
+	}
+
 	a := app.New()
 	w := a.NewWindow("FilebrowserUI")
 	w.Resize(fyne.NewSize(700, 400))
