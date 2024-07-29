@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"path"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/simplylib/genericsync"
 )
@@ -48,6 +50,8 @@ func (nc *NodeCache) Info(ctx context.Context, path string) (*Resource, error) {
 func browse(w fyne.Window, sess *filebrowserSession) {
 	cache := NewNodeCache(sess)
 
+	fileInfo := widget.NewLabel("")
+
 	tree := widget.NewTree(
 		func(id widget.TreeNodeID) []widget.TreeNodeID {
 			res, err := cache.Info(context.Background(), id)
@@ -87,5 +91,21 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			o.(*widget.Label).SetText(path.Base(id))
 		},
 	)
-	w.SetContent(tree)
+
+	tree.OnSelected = func(id widget.TreeNodeID) {
+		res, err := cache.Info(context.Background(), id)
+		if err != nil {
+			handleError(w, err, func() {})
+			return
+		}
+
+		fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB", res.Name, res.Modified, float64(res.Size)/float64(1024)/float64(1024)))
+	}
+
+	split := container.NewVSplit(
+		tree,
+		fileInfo,
+	)
+
+	w.SetContent(split)
 }
