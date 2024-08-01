@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -88,7 +89,7 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			return widget.NewLabel("Leaf template")
 		},
 		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(path.Base(id))
+			o.(*widget.Label).SetText(path.Base(strings.ReplaceAll(id, "\n", "\\n")))
 		},
 	)
 
@@ -99,7 +100,11 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			return
 		}
 
-		fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB", res.Name, res.Modified, float64(res.Size)/float64(1024)/float64(1024)))
+		fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB",
+			strings.ReplaceAll(res.Name, "\n", "\\n"),
+			res.Modified,
+			float64(res.Size)/float64(1024)/float64(1024)),
+		)
 	}
 
 	split := container.NewVSplit(

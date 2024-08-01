@@ -55,6 +55,7 @@ func parseConfig() error {
 	slog.Info("using configuration directory", "path", config.Dir)
 
 	configFilePath := filepath.Join(config.Dir, configFileName)
+	// #nosec G304 -- we want to include the filepath, since it is a configuration file
 	bs, err := os.ReadFile(configFilePath) // TODO: check permissions on our secrets file and warn user if they are bad
 	if err != nil {
 		return fmt.Errorf("could not read config file (%v): %w", configFilePath, err)
@@ -81,15 +82,15 @@ func saveConfig() error {
 		return fmt.Errorf("json marshaling error, report this error to developer: %w", err)
 	}
 
-	// create all parent directories and our directory with unix perm 770
-	if err := os.MkdirAll(config.Dir, 0770); err != nil {
+	// create all parent directories and our directory with unix perm 750
+	if err := os.MkdirAll(config.Dir, 0750); err != nil {
 		return fmt.Errorf("could not create configuration directory (%v): %w", config.Dir, err)
 	}
 
 	configFilePath := filepath.Join(config.Dir, configFileName)
 
 	// write configuration file to our directory, but only user writable
-	if err := os.WriteFile(configFilePath, bs, 0700); err != nil {
+	if err := os.WriteFile(configFilePath, bs, 0600); err != nil {
 		return fmt.Errorf("could not write file (%v): %w", configFilePath, err)
 	}
 
