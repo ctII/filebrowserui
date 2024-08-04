@@ -2,7 +2,11 @@ module github.com/ctII/filebrowserui
 
 go 1.22
 
-require fyne.io/fyne/v2 v2.4.5
+require (
+	fyne.io/fyne/v2 v2.4.5
+	github.com/simplylib/genericsync v0.0.2
+	go.etcd.io/bbolt v1.3.10
+)
 
 require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
@@ -21,13 +25,11 @@ require (
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/simplylib/genericsync v0.0.1 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.7.0 // indirect
-	go.etcd.io/bbolt v1.3.10 // indirect
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/mobile v0.0.0-20240213143359-d1f7d3436075 // indirect
 	golang.org/x/net v0.23.0 // indirect
