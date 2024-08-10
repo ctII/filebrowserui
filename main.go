@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"log/slog"
 	"os"
@@ -88,18 +86,6 @@ func logic(w fyne.Window) {
 	if config == nil { // TODO: use config.loaded?
 		err := parseConfig()
 		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
-
-				// set loaded to true as if the file doesn't exist, we "successfully"
-				// loaded the defaults. this lets things like the save config logic work
-				config = &Config{loaded: true}
-
-				go logic(w)
-
-				return
-			}
-
 			handleError(w, fmt.Errorf("WARNING configuration file error: %w", err), func() {
 				go logic(w)
 			})

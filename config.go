@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -58,12 +60,18 @@ func parseConfig() error {
 	// #nosec G304 -- we want to include the filepath, since it is a configuration file
 	bs, err := os.ReadFile(configFilePath) // TODO: check permissions on our secrets file and warn user if they are bad
 	if err != nil {
+		// if the file doesn't exist, just continue with the defaults
+		if errors.Is(err, fs.ErrNotExist) {
+			slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
+			return nil
+		}
+
 		return fmt.Errorf("could not read config file (%v): %w", configFilePath, err)
 	}
 
 	// TODO: validate that this configuration file is actually ours
 
-	c := *config
+	c := *config // TODO: check this actually copys the struct
 	if err = json.Unmarshal(bs, &c); err != nil {
 		return fmt.Errorf("invalid json config file (%v): %w", configFilePath, err)
 	}
