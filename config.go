@@ -63,6 +63,7 @@ func parseConfig() error {
 		// if the file doesn't exist, just continue with the defaults
 		if errors.Is(err, fs.ErrNotExist) {
 			slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
+			config.loaded = true
 			return nil
 		}
 
