@@ -16,3 +16,6 @@ func TestLogin(t *testing.T) {
 
 	t.Log(sess)
 }
+
+func TestUpload(t *testing.T) {}
+func TestSHA256(t *testing.T) {}
