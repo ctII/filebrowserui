@@ -50,10 +50,27 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			if branch {
 				return widget.NewLabel("Branch template")
 			}
-			return widget.NewLabel("Leaf template")
+
+			return NewNodeWidget()
 		},
 		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(path.Base(strings.ReplaceAll(id, "\n", "\\n")))
+			text := path.Base(strings.ReplaceAll(id, "\n", "\\n"))
+
+			if branch {
+				o.(*widget.Label).SetText(text)
+				return
+			}
+
+			o.(*nodeWidget).SetLabel(text)
+			o.(*nodeWidget).SetButtonFunc(func() {
+				sum, err := sess.SHA256(context.Background(), id)
+				if err != nil {
+					ShowDismissablePopup(w, err.Error())
+					return
+				}
+
+				ShowDismissablePopup(w, sum)
+			})
 		},
 	)
 
