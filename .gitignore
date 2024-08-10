@@ -17,6 +17,10 @@
 # Output of go build
 filebrowserui
 
+# Output of fyne-cross
+fyne-cross/
+Icon.png
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
