@@ -81,10 +81,19 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			return
 		}
 
-		fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB",
-			strings.ReplaceAll(res.Name, "\n", "\\n"),
-			res.Modified,
-			float64(res.Size)/float64(1024)/float64(1024)),
+		if res.IsDir {
+			fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v",
+				strings.ReplaceAll(res.Name, "\n", "\\n"),
+				res.Modified,
+			))
+		} else {
+			fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB",
+				strings.ReplaceAll(res.Name, "\n", "\\n"),
+				res.Modified,
+				float64(res.Size)/float64(1024)/float64(1024)),
+			)
+		}
+	}
 		)
 	}
 
