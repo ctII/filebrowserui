@@ -31,6 +31,7 @@ func (nc *NodeCache) Info(ctx context.Context, path string) (*Resource, error) {
 		return node.Resource, nil
 	}
 
+	slog.Debug("cache miss, calling filebrowser", "path", path)
 	res, err := nc.sess.Info(ctx, path)
 	if err != nil {
 		return nil, err
