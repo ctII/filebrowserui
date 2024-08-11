@@ -96,10 +96,9 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 		}
 	}
 
-	split := container.NewVSplit(tree, fileInfo)
-	split.SetOffset(1.0)
+	priorityLayout := container.New(&priorityVLayout{}, tree, fileInfo)
 
-	border := container.NewBorder(widget.NewButton("Upload", func() {}), nil, nil, nil, split)
+	border := container.NewBorder(widget.NewButton("Upload", func() {}), nil, nil, nil, priorityLayout)
 
 	w.SetContent(border)
 }
