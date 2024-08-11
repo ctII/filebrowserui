@@ -13,12 +13,13 @@ func ShowDismissablePopup(window fyne.Window, msg string) {
 
 	var modal *widget.PopUp
 
-	label := widget.NewLabel(msg)
-	label.Alignment = fyne.TextAlignCenter
-	scroll := container.NewHScroll(label)
+	text := widget.NewMultiLineEntry()
+	text.OnChanged = func(_ string) {
+		text.SetText(msg)
+	}
+	text.SetText(msg)
 
-	msgWidget := container.NewVBox(
-		scroll,
+	buttons := container.NewHBox(
 		widget.NewButton("Copy Text", func() {
 			window.Clipboard().SetContent(msg)
 		}),
@@ -27,7 +28,9 @@ func ShowDismissablePopup(window fyne.Window, msg string) {
 		}),
 	)
 
-	modal = widget.NewModalPopUp(msgWidget, window.Canvas())
+	priorityContainer := container.New(&priorityVLayout{}, text, container.NewCenter(buttons))
+
+	modal = widget.NewModalPopUp(priorityContainer, window.Canvas())
 	modal.Show()
 
 	modal.Resize(fyne.NewSize(window.Canvas().Size().Width, modal.Size().Height/2))
