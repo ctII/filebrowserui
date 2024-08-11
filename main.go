@@ -181,7 +181,7 @@ func setupLogLevel() (levelSet bool) {
 	switch logLevel {
 	case "debug":
 		slog.SetLogLoggerLevel(slog.LevelDebug)
-		slog.Info("Set loglevel", "level", "DEBUG")
+		slog.Info("Set log level", "level", "DEBUG")
 	case "info":
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 		slog.Info("Set log level", "level", "INFO")
