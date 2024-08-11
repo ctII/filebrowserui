@@ -87,6 +87,7 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 				res.Modified,
 			))
 		} else {
+			// TODO: dynamically change size unit
 			fileInfo.SetText(fmt.Sprintf("Name: %v\nModified: %v\nSize: %.2f MB",
 				strings.ReplaceAll(res.Name, "\n", "\\n"),
 				res.Modified,
@@ -97,10 +98,10 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 		)
 	}
 
-	split := container.NewVSplit(
-		tree,
-		fileInfo,
-	)
+	split := container.NewVSplit(tree, fileInfo)
+	split.SetOffset(1.0)
 
-	w.SetContent(split)
+	border := container.NewBorder(widget.NewButton("Upload", func() {}), nil, nil, nil, split)
+
+	w.SetContent(border)
 }
