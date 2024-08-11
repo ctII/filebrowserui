@@ -66,7 +66,7 @@ func (sess *filebrowserSession) Info(ctx context.Context, filepath string) (*Res
 
 	req, err := http.NewRequestWithContext(ctx, "GET", uri.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("could not create a http.GET( %v/%v ): %w", sess.host, filepath, err)
+		return nil, fmt.Errorf("could not create a http.GET(%v) : %w", uri.String(), err)
 	}
 
 	req.Header.Add("X-Auth", sess.token)
@@ -92,9 +92,11 @@ func (sess *filebrowserSession) Info(ctx context.Context, filepath string) (*Res
 
 	res := Resource{}
 
+	t := time.Now()
 	if err := json.Unmarshal(body, &res); err != nil {
 		return nil, fmt.Errorf("could not unmarshal request body json: %w", err)
 	}
+	slog.Debug("time it took to unmarshal json", "time", time.Since(t).String())
 
 	return &res, nil
 }
@@ -118,11 +120,31 @@ func (sess *filebrowserSession) SHA256(ctx context.Context, filepath string) (st
 	httpClient := http.Client{
 		Timeout: time.Second * 5,
 	}
-	resp, err := httpClient.Get(uri.String())
+
+	req, err := http.NewRequestWithContext(ctx, "GET", uri.String(), nil)
+	if err != nil {
+		return "", fmt.Errorf("could not create a http.GET( %v ): %w", uri.String(), err)
+	}
+
+	req.Header.Add("X-Auth", sess.token)
+	req.AddCookie(&http.Cookie{Name: "auth", Value: sess.token})
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("could not GET sha256 sum from filebrowser (%v): %w", sess.host, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err2 := resp.Body.Close(); err2 != nil {
+			if err != nil {
+				err = fmt.Errorf("could not close response body (%w) after another error: (%w)", err2, err)
+			}
+			err = err2
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("http server returned non-200 status code: %v", resp.Status)
+	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1e5))
 	if err != nil {
