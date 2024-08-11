@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -6,9 +6,11 @@ import (
 	"log/slog"
 	"path"
 	"strings"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -101,4 +103,71 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 	border := container.NewBorder(widget.NewButton("Upload", func() {}), nil, nil, nil, priorityLayout)
 
 	w.SetContent(border)
+}
+
+// handleError on window with err and call f after user hits "Okay" button.
+func handleError(w fyne.Window, err error, okay func()) {
+	once := sync.Once{}
+
+	w.SetContent(
+		container.NewVBox(
+			widget.NewLabel(err.Error()),
+			widget.NewButton("Copy Error", func() {
+				w.Clipboard().SetContent(err.Error())
+			}),
+			widget.NewButton("Okay", func() {
+				once.Do(okay)
+			}),
+		),
+	)
+}
+
+func login(w fyne.Window) (sess *filebrowserSession, err error) {
+	done := make(chan struct{})
+
+	hEntry := widget.NewEntry()
+	hEntry.Text = config.Host
+	uEntry := widget.NewEntry()
+	uEntry.Text = config.User
+	pEntry := widget.NewPasswordEntry()
+	pEntry.Text = config.Pass
+
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{
+				Text:   "Host",
+				Widget: hEntry,
+			},
+			{
+				Text:   "Username",
+				Widget: uEntry,
+			},
+			{
+				Text:   "Password",
+				Widget: pEntry,
+			},
+		},
+		OnSubmit: sync.OnceFunc(func() { close(done) }),
+	}
+
+	vbox := (container.NewVBox(layout.NewSpacer(), form, layout.NewSpacer()))
+	w.SetContent(container.NewGridWithColumns(3, layout.NewSpacer(), vbox, layout.NewSpacer()))
+
+	<-done
+
+	w.SetContent(container.NewCenter(widget.NewLabel("Logging in")))
+
+	if hEntry.Text != config.Host || uEntry.Text != config.User || pEntry.Text != config.Pass {
+		config.Host = hEntry.Text
+		config.User = uEntry.Text
+		config.Pass = pEntry.Text
+		config.changed = true
+	}
+
+	sess, err = loginToFilebrowser(config.Host, config.User, config.Pass)
+	if err != nil {
+		return nil, fmt.Errorf("could not login to (%v): %w", config.Host, err)
+	}
+
+	return sess, nil
 }

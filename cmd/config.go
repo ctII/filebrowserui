@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
@@ -33,6 +33,10 @@ type Config struct {
 }
 
 var config *Config
+
+func GetConfig() *Config {
+	return config
+}
 
 const configFileName = "config.json"
 
