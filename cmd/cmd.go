@@ -133,7 +133,7 @@ func setupLogLevel() (levelSet bool) {
 func Run() (err error) {
 	levelSet := setupLogLevel()
 
-	a := app.New()
+	a := app.NewWithID("github.com/ctII/filebrowserui")
 	w := a.NewWindow("FilebrowserUI")
 	w.Resize(fyne.NewSize(700, 400))
 	if levelSet {
