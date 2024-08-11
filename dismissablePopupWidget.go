@@ -14,6 +14,7 @@ func ShowDismissablePopup(window fyne.Window, msg string) {
 	var modal *widget.PopUp
 
 	label := widget.NewLabel(msg)
+	label.Alignment = fyne.TextAlignCenter
 	scroll := container.NewHScroll(label)
 
 	msgWidget := container.NewVBox(
