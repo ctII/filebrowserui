@@ -1,16 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
@@ -145,8 +149,36 @@ func logic(w fyne.Window) {
 	browse(w, sess)
 }
 
-func run() (err error) {
-	switch os.Getenv("LOG_LEVEL") {
+// TODO: make this buffer only hold a certain amount of lines
+var logBuf *bytes.Buffer
+
+func setupLogLevel() (levelSet bool) {
+	defer func() {
+		if !levelSet {
+			return
+		}
+		slog.Info("Using default log level")
+	}()
+
+	// TODO: there should be a way to pop this out into another window
+	logLevel, ok := os.LookupEnv("LOG_LEVEL")
+	if !ok {
+		return false
+	}
+
+	logBuf = &bytes.Buffer{}
+
+	// windows GUI applications do not have a std{out,in,err}
+	if runtime.GOOS == "windows" {
+		logger := slog.NewTextHandler(logBuf, &slog.HandlerOptions{Level: slog.LevelDebug})
+		slog.SetDefault(slog.New(logger))
+	} else {
+		w := io.MultiWriter(logBuf, os.Stdout)
+		logger := slog.NewTextHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug})
+		slog.SetDefault(slog.New(logger))
+	}
+
+	switch logLevel {
 	case "debug":
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 		slog.Info("Set loglevel", "level", "DEBUG")
@@ -159,15 +191,31 @@ func run() (err error) {
 	case "error":
 		slog.SetLogLoggerLevel(slog.LevelError)
 		slog.Info("Set log level", "level", "ERROR")
-	case "":
-		slog.Info("Using default log level")
 	default:
 		slog.Error("unknown log level", "level", os.Getenv("LOG_LEVEL"))
+		return false
 	}
+
+	return true
+}
+
+func run() (err error) {
+	levelSet := setupLogLevel()
 
 	a := app.New()
 	w := a.NewWindow("FilebrowserUI")
 	w.Resize(fyne.NewSize(700, 400))
+	if levelSet {
+		debugShortcut := desktop.CustomShortcut{
+			KeyName:  fyne.KeyI,
+			Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift,
+		}
+
+		w.Canvas().AddShortcut(&debugShortcut, func(_ fyne.Shortcut) {
+			slog.Info("opening popup for debug information")
+			ShowDismissablePopup(w, logBuf.String())
+		})
+	}
 
 	go logic(w)
 

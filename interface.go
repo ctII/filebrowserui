@@ -95,8 +95,6 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 			)
 		}
 	}
-		)
-	}
 
 	split := container.NewVSplit(tree, fileInfo)
 	split.SetOffset(1.0)
