@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ctII/filebrowserui/logbuffer"
 )
 
 func logic(w fyne.Window) {
@@ -81,7 +81,7 @@ func logic(w fyne.Window) {
 }
 
 // TODO: make this buffer only hold a certain amount of lines
-var logBuf *bytes.Buffer
+var logBuf *logbuffer.RotatingBuffer
 
 func setupLogLevel() (levelSet bool) {
 	defer func() {
@@ -97,7 +97,7 @@ func setupLogLevel() (levelSet bool) {
 		return false
 	}
 
-	logBuf = &bytes.Buffer{}
+	logBuf = logbuffer.NewRotatingBuffer(200)
 
 	// windows GUI applications do not have a std{out,in,err}
 	if runtime.GOOS == "windows" {
