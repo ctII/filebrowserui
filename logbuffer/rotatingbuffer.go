@@ -11,17 +11,17 @@ import (
 //
 // Example:
 //
-//		limit = 3
-//		buf[0] = "hello"
-//		buf[1] = "world"
-//		buf[2] = "!"
+//	limit = 3
+//	buf[0] = "hello"
+//	buf[1] = "world"
+//	buf[2] = "!"
 //
-//	 When another is written:
+// When another is written:
 //
-//	 	limit = 3
-//	 	buf[0] = "Lorum"
-//	 	buf[1] = "hello"
-//	 	buf[2] = "world"
+//	limit = 3
+//	buf[0] = "Lorum"
+//	buf[1] = "hello"
+//	buf[2] = "world"
 type RotatingBuffer struct {
 	mu sync.Mutex
 
