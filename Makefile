@@ -11,7 +11,7 @@ test: build-test-dockerfile
 	until curl -s 127.0.0.1:8080 > /dev/null; do echo "makefile: waiting on filebrowser container to finish initalizing" && sleep 0.1; done
 
 	$(info makefile: Starting Go Test)
-	-FILEBROWSER_USERNAME=admin FILEBROWSER_PASSWORD=admin FILEBROWSER_HOST=http://127.0.0.1:8080 go test -race ./...
+	-go test -race ./...
 
 	$(info makefile: Killing postgres)
 	podman kill filebrowser-test
@@ -23,7 +23,7 @@ test-verbose: build-test-dockerfile
 	until curl -s 127.0.0.1:8080 > /dev/null; do echo "makefile: waiting on filebrowser container to finish initalizing" && sleep 0.1; done
 
 	$(info makefile: Starting Go Test)
-	-FILEBROWSER_USERNAME=admin FILEBROWSER_PASSWORD=admin FILEBROWSER_HOST=http://127.0.0.1:8080 go test -race -v ./...
+	-go test -race -v ./...
 
 	$(info makefile: Killing postgres)
 	podman kill filebrowser-test
