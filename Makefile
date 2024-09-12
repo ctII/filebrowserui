@@ -1,6 +1,9 @@
 build-test-dockerfile:
 	podman build -f filebrowser-test.Dockerfile --tag filebrowserui-test:latest
 
+spawn-filebrowser:
+	podman run --name filebrowser-test --rm --net=host filebrowserui-test:latest
+
 test: build-test-dockerfile
 	$(info makefile: Spawning postgres container)
 	podman run --name filebrowser-test --rm --net=host filebrowserui-test:latest &

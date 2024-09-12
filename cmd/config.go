@@ -40,6 +40,35 @@ func GetConfig() *Config {
 
 const configFileName = "config.json"
 
+func parseConfigPath(path string) error {
+	// #nosec G304 -- we want to include the filepath, since it is a configuration file
+	bs, err := os.ReadFile(path) // TODO: check permissions on our secrets file and warn user if they are bad
+	if err != nil {
+		// if the file doesn't exist, just continue with the defaults
+		if errors.Is(err, fs.ErrNotExist) {
+			slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
+			config.loaded = true
+			return nil
+		}
+
+		return fmt.Errorf("could not read config file (%v): %w", path, err)
+	}
+
+	// TODO: validate that this configuration file is actually ours
+
+	c := *config // TODO: check this actually copys the struct
+	if err = json.Unmarshal(bs, &c); err != nil {
+		return fmt.Errorf("invalid json config file (%v): %w", path, err)
+	}
+
+	// single op assignment to prevent json parsing errors from changing config
+	// this allows using defaults if json unmarshaling errors out
+	config = &c
+	config.loaded = true
+
+	return nil
+}
+
 func parseConfig() error {
 	config = &Config{} // TODO: this is bad, but currently how we signal to logic() that we have run before
 
@@ -61,32 +90,8 @@ func parseConfig() error {
 	slog.Info("using configuration directory", "path", config.Dir)
 
 	configFilePath := filepath.Join(config.Dir, configFileName)
-	// #nosec G304 -- we want to include the filepath, since it is a configuration file
-	bs, err := os.ReadFile(configFilePath) // TODO: check permissions on our secrets file and warn user if they are bad
-	if err != nil {
-		// if the file doesn't exist, just continue with the defaults
-		if errors.Is(err, fs.ErrNotExist) {
-			slog.Info("configuration file doesn't exist, instead using defaults", "error", err)
-			config.loaded = true
-			return nil
-		}
 
-		return fmt.Errorf("could not read config file (%v): %w", configFilePath, err)
-	}
-
-	// TODO: validate that this configuration file is actually ours
-
-	c := *config // TODO: check this actually copys the struct
-	if err = json.Unmarshal(bs, &c); err != nil {
-		return fmt.Errorf("invalid json config file (%v): %w", configFilePath, err)
-	}
-
-	// single op assignment to prevent json parsing errors from changing config
-	// this allows using defaults if json unmarshaling errors out
-	config = &c
-	config.loaded = true
-
-	return nil
+	return parseConfigPath(configFilePath)
 }
 
 func saveConfig() error {
