@@ -88,6 +88,9 @@ func randomUUID() ([]byte, error) {
 
 func decodeWALListBytes(b []byte, e any) error {
 	err := gob.NewDecoder(bytes.NewReader(b)).Decode(e)
+	if err != nil {
+		return fmt.Errorf("could not decode gob bytes: %w", err)
+	}
 	return nil
 }
 
