@@ -247,6 +247,8 @@ github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636/go.mod h1:TDJrrUr11Vxr
 github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749/go.mod h1:ZY1cvUeJuFPAdZ/B6v7RHavJWZn2YPVFQ1OSXhCGOkg=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546/go.mod h1:TrYk7fJVaAttu97ZZKrO9UbRa8izdowaMIZcxYMbVaw=
+github.com/simplylib/errgroup v0.0.6 h1:YOryBFznoYpVorii0xkxwRn3YSRN3cDdyJcEUOWIUro=
+github.com/simplylib/errgroup v0.0.6/go.mod h1:LrhDWlpGn/xMLQfDVHbltuUulMOmpj2OLcSveOkD9Bw=
 github.com/simplylib/genericsync v0.0.2 h1:ezJbW5/pyY4UPq22sKlVfoAkKOX7Tsa+QH532i0uPgA=
 github.com/simplylib/genericsync v0.0.2/go.mod h1:Fz1akxgSepUYg4KDQp1BqKfdGxdeyebU7e+XrYK7b8M=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
