@@ -59,22 +59,14 @@ func TestBatch(t *testing.T) {
 		t.Fatalf("expected len(logs)=0, got %v", len(logs))
 	}
 
-	exists, err := batch.Start("/tmp/test")
+	err = batch.Start("/tmp/test")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if exists {
-		t.Fatal("batch shouldn't exist, but it does")
-	}
-
-	exists, err = batch.Start("/tmp/test")
+	err = batch.Start("/tmp/test")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if !exists {
-		t.Fatal("batch should exist, but it doesn't")
 	}
 
 	err = batch.Finish("/tmp/test")
@@ -146,7 +138,7 @@ func TestWALRaciness(t *testing.T) {
 			}
 
 			for i := range nSubpaths {
-				if _, err := b.Start(name); err != nil {
+				if err := b.Start(name); err != nil {
 					return fmt.Errorf("could not start subpath (%v) in batch (%v): %w", i, name, err)
 				}
 				if err := b.Finish(name); err != nil {

@@ -20,7 +20,7 @@ func newBatch(bid []byte, db *bbolt.DB) Batch {
 	}
 }
 
-func (b *Batch) Start(name string) (exists bool, err error) {
+func (b *Batch) Start(name string) (err error) {
 	err = b.db.Update(func(tx *bbolt.Tx) error {
 		batchesBucket := tx.Bucket([]byte("batches"))
 		if batchesBucket == nil {
@@ -32,12 +32,6 @@ func (b *Batch) Start(name string) (exists bool, err error) {
 			return fmt.Errorf("WAL: bucket of Batch(%v) doesn't exist, either some corruption or more likely this was called after bucket was deleted", b.id)
 		}
 
-		// Does this path already exist?
-		if bs := bucket.Get([]byte(name)); bs != nil && len(bs) == 0 {
-			exists = true
-			return nil
-		}
-
 		if err := bucket.Put([]byte(name), []byte{}); err != nil {
 			return fmt.Errorf("could not add key (%v) to the batches bucket: %w", name, err)
 		}
@@ -45,10 +39,10 @@ func (b *Batch) Start(name string) (exists bool, err error) {
 		return nil
 	})
 	if err != nil {
-		return false, fmt.Errorf("could not update bbolt database: %w", err)
+		return fmt.Errorf("could not update bbolt database: %w", err)
 	}
 
-	return exists, nil
+	return nil
 }
 
 func (b *Batch) Finish(name string) error {
@@ -142,4 +136,8 @@ func (b *Batch) Destination() (string, error) {
 	}
 
 	return destination, nil
+}
+
+func (b *Batch) ID() string {
+	return string(b.id)
 }
