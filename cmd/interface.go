@@ -102,7 +102,7 @@ func browse(w fyne.Window, sess *filebrowserSession) {
 
 	border := container.NewBorder(widget.NewButton("Upload", func() {}), nil, nil, nil, priorityLayout)
 
-	w.SetContent(border)
+	fyne.DoAndWait(func() { w.SetContent(border) })
 }
 
 // handleError on window with err and call f after user hits "Okay" button.
@@ -151,11 +151,11 @@ func login(w fyne.Window) (sess *filebrowserSession, err error) {
 	}
 
 	vbox := (container.NewVBox(layout.NewSpacer(), form, layout.NewSpacer()))
-	w.SetContent(container.NewGridWithColumns(3, layout.NewSpacer(), vbox, layout.NewSpacer()))
+	fyne.DoAndWait(func() { w.SetContent(container.NewGridWithColumns(3, layout.NewSpacer(), vbox, layout.NewSpacer())) })
 
 	<-done
 
-	w.SetContent(container.NewCenter(widget.NewLabel("Logging in")))
+	fyne.DoAndWait(func() { w.SetContent(container.NewCenter(widget.NewLabel("Logging in"))) })
 
 	if hEntry.Text != config.Host || uEntry.Text != config.User || pEntry.Text != config.Pass {
 		config.Host = hEntry.Text
