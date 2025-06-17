@@ -15,7 +15,7 @@
 *.out
 
 # Output of go build
-filebrowserui
+./filebrowserui
 
 # Output of fyne-cross
 fyne-cross/
