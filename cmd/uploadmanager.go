@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"sync"
@@ -14,6 +15,9 @@ internal documention:
 
 */
 
+type cancellableQueue struct {
+}
+
 // uploadManager manages the paused, running, and failed uploads to the server
 // as well as the ones that crashed and must be resumed.
 type uploadManager struct {
@@ -25,6 +29,8 @@ type uploadManager struct {
 
 	batchChannel chan wal.Batch
 	stopChannel  chan error
+
+	queue cancellableQueue
 }
 
 // removeIndexFromSlice by modifying the slice and returning the result, modifying the content of the original slice
@@ -32,23 +38,33 @@ func removeIndexFromSlice[S any](s []S, index int) []S {
 	return slices.Clip(slices.Delete(s, index, index+1))
 }
 
-func (um *uploadManager) uploadBatch(b wal.Batch, finished func(), cancel chan struct{}) {
+func (um *uploadManager) startItem(ctx context.Context, path string) {
+
+}
+
+func (um *uploadManager) startUploadingBatch(b wal.Batch, finished func(), cancel chan struct{}) {
 	defer finished()
 
 	// TODO: maybe get list from distribute batches instead of calling batch list
-	list, err := b.ListUnfinished()
+	unfinishedUploads, err := b.ListUnfinished()
 	if err != nil {
 		// TODO: throw a better error with the ability to cancel an item out of this batch
 		um.onGeneralError(err)
 		return
 	}
 
-	for _, s := range list {
+	for _, unfinishedFilePath := range unfinishedUploads {
 		select {
 		case <-cancel:
 			// Did we get cancelled?
 		default:
 		}
+
+		go func() {
+			// TODO: start item in the queue and limit by a user-defined variable
+			// maybe some algo that checks the max number of files we should upload by testing
+			_ = unfinishedFilePath
+		}()
 	}
 
 	// TODO: maybe add a whole list to the batch at once
